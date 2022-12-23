@@ -81,9 +81,26 @@ object "ContractObject" {
 
 
 
-            //================= Storage functions =================================
+            //================= Storage, Memory index functions =================================
             function getOwnerIndex() -> owner {
                 owner := 0
+            }
+            function getFreeMemoryPointerIndex() -> idx {
+                idx := 0x40
+            }
+            function setFreeMemoryPointer(size) {
+                mstore(getFreeMemoryPointerIndex(), size)
+            }
+            function byte32ToMemory(val) -> idx {
+                let freeMemPointer := mload(getFreeMemoryPointerIndex())
+                mstore(freeMemPointer, val)
+                idx : add(0x20, freeMemPointer)
+            }
+            function byte32ToMemoryAndUpdate(val) -> idx {
+                let freeMemPointer := mload(getFreeMemoryPointerIndex())
+                mstore(freeMemPointer, val)
+                idx : add(0x20, freeMemPointer)
+                mstore(getFreeMemoryPointerIndex(), idx)
             }
 
             //================= Util functions =================================
@@ -118,7 +135,13 @@ object "ContractObject" {
                 //}
                 debugStack(loadCallDataValue(arrayLength),loadCallDataValue(add(storedLocationIndex,index)))
             }
-
+            /**
+            * Use to initialize an dynamic array
+            * memPointerIndex - initial index of the array which stores the memory address of the length
+            * memPointerValue - this is the memory pointer address where the length of the dynamic array is stored
+            * value - storing initial value
+            * (finalPointer) - furthest index in memory which is used by the array
+            **/
             function initDynamicArray(memPointerIndex, memPointerValue, value ) -> finalPointer {
                  if iszero(iszero(mload(memPointerIndex))) {
                     revert(0,0)
@@ -132,7 +155,11 @@ object "ContractObject" {
                 mstore(add(memPointerValue, 32), value)
                 finalPointer := add(finalPointer, 32)
             }
-
+ /**
+            * memPointerIndex - initial index of the array which stores the memory address of the length
+            * value - storing initial value
+            * (finalPointer) - furthest index in memory which is used by the array
+            **/
             function push(memPointerIndex, value) -> finalPointer {
                 let memPointerValue := mload(memPointerIndex)
                 let newArrayLength :=  add(mload(memPointerValue), 1)
@@ -142,6 +169,9 @@ object "ContractObject" {
                 finalPointer := add(finalPointer, 32)
 
             }
+
+
+
 
             //================= log functions =================================
 
@@ -185,6 +215,17 @@ object "ContractObject" {
 
             //================= logic functions =================================
 
+            function balanceOf(addr, tokenId) -> val {
+                let freePointer := mload(getFreeMemoryPointerIndex())
+                if iszero(freePointer) {
+                    freePointer := 0x60
+                }
+                //mstore(freePointer, addr)
+                //mstore(freePointer, addr)
+                //setFreeMemoryPointer(0x80)
+                //let hash := keccak256(freePointer, add(0x20, freePointer))
+                //val := sload(hash)
+            }
 
 
         }
