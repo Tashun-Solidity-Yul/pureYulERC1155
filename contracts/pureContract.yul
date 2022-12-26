@@ -10,8 +10,9 @@ object "ContractObject" {
         code{
 
             switch getSelector()
-            case 0x186f2b64 /* balanceOf(address,uint256) */ {
-
+            case 0x00fdd58e /* balanceOf(address,uint256) */ {
+                let ret := balanceOf(loadCallDataValue(0),loadCallDataValue(1))
+                returnOneUint256(ret)
             }
             case 0x4e1273f4 /* balanceOfBatch(address[],uint256[]) */ {
 
@@ -43,12 +44,14 @@ object "ContractObject" {
                 //debugStack(loadCallDataValue(div(storedLocation, 32)),loadCallDataValue(0))
             }
             case 0x731133e9 /* mint(address,uint256,uint256,bytes) */ {
-
+                let ret := mint(loadCallDataValue(0), loadCallDataValue(1), loadCallDataValue(2))
+                //returnOneUint256(ret)
             }
             case 0x1f7fdffa /* mintBatch(address,uint256[],uint256[],bytes) */ {
 
             }
             case 0xf5298aca /* burn(address,uint256,uint256) */ {
+                let ret := burn(loadCallDataValue(0), loadCallDataValue(1), loadCallDataValue(2))
 
             }
             case 0x6b20c454 /* burnBatch(address,uint256[],uint256[]) */ {
@@ -88,18 +91,26 @@ object "ContractObject" {
             function getFreeMemoryPointerIndex() -> idx {
                 idx := 0x40
             }
+            function nonceForBalanceOf() -> nonce {
+                nonce := 1
+            }
             function setFreeMemoryPointer(size) {
                 mstore(getFreeMemoryPointerIndex(), size)
             }
             function byte32ToMemory(val) -> idx {
                 let freeMemPointer := mload(getFreeMemoryPointerIndex())
                 mstore(freeMemPointer, val)
-                idx : add(0x20, freeMemPointer)
+                idx := add(0x20, freeMemPointer)
             }
-            function byte32ToMemoryAndUpdate(val) -> idx {
+            function byte32ToMemoryWithoutUpdatingPointer(val) -> idx {
                 let freeMemPointer := mload(getFreeMemoryPointerIndex())
                 mstore(freeMemPointer, val)
-                idx : add(0x20, freeMemPointer)
+                idx := add(0x20, freeMemPointer)
+            }
+            function byte32ToMemoryAndUpdatePointer(val) -> idx {
+                let freeMemPointer := mload(getFreeMemoryPointerIndex())
+                mstore(freeMemPointer, val)
+                idx := add(0x20, freeMemPointer)
                 mstore(getFreeMemoryPointerIndex(), idx)
             }
 
@@ -135,6 +146,7 @@ object "ContractObject" {
                 //}
                 debugStack(loadCallDataValue(arrayLength),loadCallDataValue(add(storedLocationIndex,index)))
             }
+
             /**
             * Use to initialize an dynamic array
             * memPointerIndex - initial index of the array which stores the memory address of the length
@@ -142,6 +154,7 @@ object "ContractObject" {
             * value - storing initial value
             * (finalPointer) - furthest index in memory which is used by the array
             **/
+
             function initDynamicArray(memPointerIndex, memPointerValue, value ) -> finalPointer {
                  if iszero(iszero(mload(memPointerIndex))) {
                     revert(0,0)
@@ -155,11 +168,13 @@ object "ContractObject" {
                 mstore(add(memPointerValue, 32), value)
                 finalPointer := add(finalPointer, 32)
             }
- /**
+
+            /**
             * memPointerIndex - initial index of the array which stores the memory address of the length
             * value - storing initial value
             * (finalPointer) - furthest index in memory which is used by the array
             **/
+
             function push(memPointerIndex, value) -> finalPointer {
                 let memPointerValue := mload(memPointerIndex)
                 let newArrayLength :=  add(mload(memPointerValue), 1)
@@ -216,15 +231,47 @@ object "ContractObject" {
             //================= logic functions =================================
 
             function balanceOf(addr, tokenId) -> val {
-                let freePointer := mload(getFreeMemoryPointerIndex())
-                if iszero(freePointer) {
-                    freePointer := 0x60
+                let freePointer := byte32ToMemoryWithoutUpdatingPointer(addr)
+
+                mstore(add(0x20, freePointer), tokenId)
+                mstore(add(0x40, freePointer), nonceForBalanceOf())
+                let updatedPointerValue :=  add(0x60, freePointer)
+                setFreeMemoryPointer( updatedPointerValue)
+
+                let hash := keccak256(freePointer, updatedPointerValue)
+                val := sload(hash)
+            }
+
+            function mint(sender, tokenId, amount ) -> bool {
+                let freePointer := byte32ToMemoryWithoutUpdatingPointer(sender)
+
+                mstore(add(0x20, freePointer), tokenId)
+                mstore(add(0x40, freePointer), nonceForBalanceOf())
+                let updatedPointerValue :=  add(0x60, freePointer)
+                setFreeMemoryPointer( updatedPointerValue)
+
+                let hash := keccak256(freePointer, updatedPointerValue)
+                let val := sload(hash)
+                sstore(hash, add(val, amount))
+                bool := 1
+
+            }
+
+            function burn(sender, tokenId, amount ) -> bool {
+                let freePointer := byte32ToMemoryWithoutUpdatingPointer(sender)
+
+                mstore(add(0x20, freePointer), tokenId)
+                mstore(add(0x40, freePointer), nonceForBalanceOf())
+                let updatedPointerValue :=  add(0x60, freePointer)
+                setFreeMemoryPointer( updatedPointerValue)
+
+                let hash := keccak256(freePointer, updatedPointerValue)
+                let val := sload(hash)
+                if gt(val,amount) {
+                    revert(0,0)
                 }
-                //mstore(freePointer, addr)
-                //mstore(freePointer, addr)
-                //setFreeMemoryPointer(0x80)
-                //let hash := keccak256(freePointer, add(0x20, freePointer))
-                //val := sload(hash)
+                sstore(hash, sub(val, amount))
+                bool := 1
             }
 
 
