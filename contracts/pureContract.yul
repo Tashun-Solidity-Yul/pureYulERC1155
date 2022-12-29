@@ -8,7 +8,7 @@ object "ContractObject" {
     object "RuntimeObject" {
 
         code{
-
+            setFreeMemoryPointer( 0x60)
             switch getSelector()
             case 0x00fdd58e /* balanceOf(address,uint256) */ {
                 let ret := balanceOf(loadCallDataValue(0),loadCallDataValue(1))
@@ -48,6 +48,22 @@ object "ContractObject" {
                 //returnOneUint256(ret)
             }
             case 0x1f7fdffa /* mintBatch(address,uint256[],uint256[],bytes) */ {
+            // todo checks
+
+                let storedLocationIndex := div(loadCallDataValue(1), 32)
+                let arrayLength := loadCallDataValue(storedLocationIndex)
+
+                //debugStack(storedLocationIndex,arrayLength)
+                //debugStack(readDynamicArrayValue(1, 1),readDynamicArrayValue(2, 1))
+                //debugStack(readDynamicArrayValue(1, 2),readDynamicArrayValue(2, 2))
+
+                //for {let y := 0} iszero(gt(y,sub(arrayLength,1))) { y:= add(y,1)} {
+                    let ret := mint(loadCallDataValue(0), readDynamicArrayValue(1, 1), readDynamicArrayValue(2, 1))
+                    let ret1 := mint(loadCallDataValue(0), readDynamicArrayValue(1, 2), readDynamicArrayValue(2, 2))
+                    //let ret2 := balanceOf(loadCallDataValue(0),readDynamicArrayValue(1, 1))
+                    let ret4 := balanceOf(loadCallDataValue(0),readDynamicArrayValue(1, 2))
+
+                //}
 
             }
             case 0xf5298aca /* burn(address,uint256,uint256) */ {
@@ -105,7 +121,7 @@ object "ContractObject" {
             function byte32ToMemoryWithoutUpdatingPointer(val) -> idx {
                 let freeMemPointer := mload(getFreeMemoryPointerIndex())
                 mstore(freeMemPointer, val)
-                idx := add(0x20, freeMemPointer)
+                idx := freeMemPointer
             }
             function byte32ToMemoryAndUpdatePointer(val) -> idx {
                 let freeMemPointer := mload(getFreeMemoryPointerIndex())
@@ -137,14 +153,15 @@ object "ContractObject" {
                 val := calldataload(position)
             }
 
-            function readDynamicArrayValue(positionInCallData, index) {
+            function readDynamicArrayValue(positionInCallData, index) -> val {
                 let storedLocationIndex := div(loadCallDataValue(positionInCallData), 32)
                 let arrayLength := loadCallDataValue(div(storedLocationIndex, 32))
 
                 //for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
                 //    debugStack(loadCallDataValue(arrayLength),loadCallDataValue(add(storedLocationIndex,y)))
                 //}
-                debugStack(loadCallDataValue(arrayLength),loadCallDataValue(add(storedLocationIndex,index)))
+                //debugStack(160,loadCallDataValue(add(storedLocationIndex,index)))
+                val := loadCallDataValue(add(storedLocationIndex,index))
             }
 
             /**
@@ -183,6 +200,13 @@ object "ContractObject" {
                 mstore(finalPointer, value)
                 finalPointer := add(finalPointer, 32)
 
+            }
+
+            function getHashValue( attr1, attr2, attr3) -> ret{
+                mstore(0x60,attr1)
+                mstore(0x80,attr2)
+                mstore(0xa0,attr3)
+                ret := keccak256(0x60,0xc0)
             }
 
 
@@ -231,27 +255,38 @@ object "ContractObject" {
             //================= logic functions =================================
 
             function balanceOf(addr, tokenId) -> val {
-                let freePointer := byte32ToMemoryWithoutUpdatingPointer(addr)
+                //let freePointer := byte32ToMemoryWithoutUpdatingPointer(addr)
 
-                mstore(add(0x20, freePointer), tokenId)
-                mstore(add(0x40, freePointer), nonceForBalanceOf())
-                let updatedPointerValue :=  add(0x60, freePointer)
-                setFreeMemoryPointer( updatedPointerValue)
+                //mstore(add(0x20, freePointer), tokenId)
+                //mstore(add(0x40, freePointer), nonceForBalanceOf())
+                //let updatedPointerValue :=  add(0x60, freePointer)
+                //setFreeMemoryPointer( updatedPointerValue)
+                //debugStack(freePointer,updatedPointerValue)
+                //debugStack(mload(freePointer),mload(add(0x20, freePointer)))
+                //debugStack(mload(add(0x40, freePointer)),mload(add(0x60, freePointer)))
 
-                let hash := keccak256(freePointer, updatedPointerValue)
+                //let hash := keccak256(freePointer, updatedPointerValue)
+                let hash := getHashValue(addr, tokenId, 1)
                 val := sload(hash)
+                debugStack(hash,val)
             }
 
             function mint(sender, tokenId, amount ) -> bool {
-                let freePointer := byte32ToMemoryWithoutUpdatingPointer(sender)
+                //let freePointer := byte32ToMemoryWithoutUpdatingPointer(sender)
 
-                mstore(add(0x20, freePointer), tokenId)
-                mstore(add(0x40, freePointer), nonceForBalanceOf())
-                let updatedPointerValue :=  add(0x60, freePointer)
-                setFreeMemoryPointer( updatedPointerValue)
-
-                let hash := keccak256(freePointer, updatedPointerValue)
+                //mstore(add(0x20, freePointer), tokenId)
+                //mstore(add(0x40, freePointer), nonceForBalanceOf())
+                //debugStack(mload(freePointer),mload(add(0x40, freePointer)))
+                //let updatedPointerValue :=  add(0x60, freePointer)
+                //setFreeMemoryPointer( updatedPointerValue)
+                //debugStack(freePointer,updatedPointerValue)
+                //debugStack(mload(freePointer),mload(add(0x20, freePointer)))
+                //debugStack(mload(add(0x40, freePointer)),mload(add(0x60, freePointer)))
+                //let hash := keccak256(freePointer, updatedPointerValue)
+                let hash := getHashValue(sender, tokenId, 1)
                 let val := sload(hash)
+                //debugStack(hash,val)
+                //debugStack(hash,val)
                 sstore(hash, add(val, amount))
                 bool := 1
 
@@ -267,7 +302,7 @@ object "ContractObject" {
 
                 let hash := keccak256(freePointer, updatedPointerValue)
                 let val := sload(hash)
-                if gt(val,amount) {
+                if gt(amount, val) {
                     revert(0,0)
                 }
                 sstore(hash, sub(val, amount))
