@@ -1,0 +1,3 @@
+rootPath: ".\\test\\e2e-testing"
+pathToYulIgnore: ".\\test\\compiler-tests\\e2e-testing\\e2e-test-mock-data\\.yulignore"
+savePath: ".\\test\\compiler-tests\\e2e-testing\\mock-compiled-code"

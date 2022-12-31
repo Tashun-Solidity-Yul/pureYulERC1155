@@ -1,0 +1,233 @@
+
+======= test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul (EVM) =======
+
+Pretty printed source:
+object "ERC20" {
+    code {
+        {
+            sstore(0, caller())
+            let _1 := datasize("Code")
+            datacopy(0, dataoffset("Code"), _1)
+            return(0, _1)
+        }
+    }
+    object "Code" {
+        code {
+            {
+                let val := calldataload(4)
+                switch shr(224, val)
+                case 0x06fdde03 { }
+                case 0x95d89b41 { }
+                case 0x313ce567 {
+                    mstore(0, 18)
+                    return(0, 0x20)
+                }
+                case 0x18160ddd {
+                    mstore(0x0, sload(1))
+                    return(0x0, 0x20)
+                }
+                case 0x70a08231 {
+                    mstore(0x0, add(val, 0x1))
+                    return(0x0, 0x20)
+                }
+                case 0xa9059cbb { }
+                case 0xdd62ed3e { }
+                case 0x095ea7b3 { }
+                case 0x23b872dd { }
+                case 0x39509351 { }
+                case 0xa457c2d7 { }
+                case 0x40c10f19 { }
+                default { revert(0, 0) }
+            }
+        }
+    }
+}
+
+
+Binary representation:
+3360005560a9806100116000396000f3fe6004358060e01c90816306fdde0314608457816395d89b41146084578163313ce56714609e57816318160ddd14609257816370a0823114608657508063a9059cbb146084578063dd62ed3e146084578063095ea7b314608457806323b872dd14608457806339509351146084578063a457c2d7146084576340c10f1914608457600080fd5b005b60010160005260206000f35b60015460005260206000f35b601260005260206000f3
+
+Text representation:
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":48:56   */
+  caller
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":45:46   */
+  0x00
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":38:57   */
+  sstore
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":98:114   */
+  dataSize(sub_0)
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":79:97   */
+  dup1
+  dataOffset(sub_0)
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":45:46   */
+  0x00
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":67:115   */
+  codecopy
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":45:46   */
+  0x00
+    /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":125:154   */
+  return
+stop
+
+sub_0: assembly {
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2601:2602   */
+      0x04
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2649:2671   */
+      calldataload
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2779:2865   */
+      dup1
+      0xe0
+      shr
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":276:331   */
+      swap1
+      dup2
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":281:291   */
+      0x06fdde03
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":276:331   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":353:410   */
+      dup2
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":358:368   */
+      0x95d89b41
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":353:410   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":432:525   */
+      dup2
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":437:447   */
+      0x313ce567
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":432:525   */
+      eq
+      tag_5
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":547:646   */
+      dup2
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":552:562   */
+      0x18160ddd
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":547:646   */
+      eq
+      tag_7
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":670:790   */
+      dup2
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":675:685   */
+      0x70a08231
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":670:790   */
+      eq
+      tag_9
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":814:961   */
+      pop
+      dup1
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":819:829   */
+      0xa9059cbb
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":814:961   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":983:1056   */
+      dup1
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":988:998   */
+      0xdd62ed3e
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":983:1056   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1079:1150   */
+      dup1
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1084:1094   */
+      0x095ea7b3
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1079:1150   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1173:1257   */
+      dup1
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1178:1188   */
+      0x23b872dd
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1173:1257   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1280:1361   */
+      dup1
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1285:1295   */
+      0x39509351
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1280:1361   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1384:1465   */
+      dup1
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1389:1399   */
+      0xa457c2d7
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1384:1465   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1492:1502   */
+      0x40c10f19
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1487:1559   */
+      eq
+      tag_23
+      jumpi
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2801:2802   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1617:1628   */
+      dup1
+      revert
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1533:1559   */
+    tag_23:
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":234:1651   */
+      stop
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":709:790   */
+    tag_9:
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":3673:3676   */
+      0x01
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":3664:3677   */
+      add
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2185:2188   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2178:2212   */
+      mstore
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2249:2253   */
+      0x20
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2185:2188   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2238:2254   */
+      return
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":583:646   */
+    tag_7:
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":3441:3442   */
+      0x01
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2006:2034   */
+      sload
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2001:2004   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1994:2035   */
+      mstore
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2074:2078   */
+      0x20
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2001:2004   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2061:2079   */
+      return
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":465:525   */
+    tag_5:
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1850:1852   */
+      0x12
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2801:2802   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1838:1853   */
+      mstore
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1892:1896   */
+      0x20
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":2801:2802   */
+      0x00
+        /* "test/compiler-tests/e2e-testing/e2e-test-mock-data/mock2.yul":1879:1897   */
+      return
+}
+
