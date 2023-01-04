@@ -15,7 +15,17 @@ object "ContractObject" {
                 returnOneUint256(ret)
             }
             case 0x4e1273f4 /* balanceOfBatch(address[],uint256[]) */ {
+                let arrayLength := loadCallDataValue(div(loadCallDataValue(0), 32))
 
+                revertIfZero(arrayLength)
+                revertIfNotEqual(arrayLength,loadCallDataValue(div(loadCallDataValue(1), 32)))
+
+
+                let finalPointer :=initDynamicArray(0x0, 0xc0, balanceOf(readDynamicArrayValue(0, 1),readDynamicArrayValue(1, 1)))
+                for {let y := 2} lt(y,add(arrayLength,1)) { y:= add(y,1)} {
+                    finalPointer := push(0x0,balanceOf(readDynamicArrayValue(0, y),readDynamicArrayValue(1, y)))
+                }
+                return(0x0, finalPointer)
             }
 
             case 0xa22cb465 /* setApprovalForAll(address,bool) */ {
@@ -50,20 +60,17 @@ object "ContractObject" {
             case 0x1f7fdffa /* mintBatch(address,uint256[],uint256[],bytes) */ {
             // todo checks
 
-                let storedLocationIndex := div(loadCallDataValue(1), 32)
-                let arrayLength := loadCallDataValue(storedLocationIndex)
+                let arrayLength := loadCallDataValue(div(loadCallDataValue(1), 32))
+                let toAddress := loadCallDataValue(0)
 
-                //debugStack(storedLocationIndex,arrayLength)
-                //debugStack(readDynamicArrayValue(1, 1),readDynamicArrayValue(2, 1))
-                //debugStack(readDynamicArrayValue(1, 2),readDynamicArrayValue(2, 2))
+                revertIfZero(arrayLength)
+                revertIfZero(toAddress)
+                revertIfNotEqual(arrayLength,loadCallDataValue(div(loadCallDataValue(2), 32)))
 
-                //for {let y := 0} iszero(gt(y,sub(arrayLength,1))) { y:= add(y,1)} {
-                    let ret := mint(loadCallDataValue(0), readDynamicArrayValue(1, 1), readDynamicArrayValue(2, 1))
-                    let ret1 := mint(loadCallDataValue(0), readDynamicArrayValue(1, 2), readDynamicArrayValue(2, 2))
-                    //let ret2 := balanceOf(loadCallDataValue(0),readDynamicArrayValue(1, 1))
-                    let ret4 := balanceOf(loadCallDataValue(0),readDynamicArrayValue(1, 2))
+                for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
+                    pop(mint(toAddress, readDynamicArrayValue(1, y), readDynamicArrayValue(2, y)))
 
-                //}
+                }
 
             }
             case 0xf5298aca /* burn(address,uint256,uint256) */ {
@@ -71,7 +78,19 @@ object "ContractObject" {
 
             }
             case 0x6b20c454 /* burnBatch(address,uint256[],uint256[]) */ {
+                let storedLocationIndex := div(loadCallDataValue(1), 32)
+                let arrayLength := loadCallDataValue(storedLocationIndex)
+                let toAddress := loadCallDataValue(0)
 
+
+                revertIfZero(arrayLength)
+                revertIfZero(toAddress)
+                revertIfNotEqual(arrayLength,loadCallDataValue(div(loadCallDataValue(2), 32)))
+
+                for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
+                    pop(burn(toAddress, readDynamicArrayValue(1, y), readDynamicArrayValue(2, y)))
+
+                }
             }
             case 0x7f2c00d3 /* doSafeTransferAcceptanceCheck(address,address,address,uint256,uint256,bytes) */ {
 
@@ -109,6 +128,9 @@ object "ContractObject" {
             }
             function nonceForBalanceOf() -> nonce {
                 nonce := 1
+            }
+            function nonceOperatorApprovals() -> nonce {
+                nonce := 2
             }
             function setFreeMemoryPointer(size) {
                 mstore(getFreeMemoryPointerIndex(), size)
@@ -206,7 +228,8 @@ object "ContractObject" {
                 mstore(0x60,attr1)
                 mstore(0x80,attr2)
                 mstore(0xa0,attr3)
-                ret := keccak256(0x60,0xc0)
+
+                ret := keccak256(0x60,0x60)
             }
 
 
@@ -251,62 +274,82 @@ object "ContractObject" {
             function emitLog2(memoryStartIndex, memoryEndIndex, signature, t2){
                 log2(memoryStartIndex, memoryEndIndex, signature, t2)
             }
+            //================= Error functions =================================
+            function revertIfZero(amount) {
+                if eq(amount,0) {
+                    revert(0,0)
+                }
+            }
+            function revertIfNotEqual(amount1, amount2) {
+                if iszero(eq(amount1,amount2)) {
+                    revert(0,0)
+                }
+            }
+
 
             //================= logic functions =================================
 
             function balanceOf(addr, tokenId) -> val {
-                //let freePointer := byte32ToMemoryWithoutUpdatingPointer(addr)
-
-                //mstore(add(0x20, freePointer), tokenId)
-                //mstore(add(0x40, freePointer), nonceForBalanceOf())
-                //let updatedPointerValue :=  add(0x60, freePointer)
-                //setFreeMemoryPointer( updatedPointerValue)
-                //debugStack(freePointer,updatedPointerValue)
-                //debugStack(mload(freePointer),mload(add(0x20, freePointer)))
-                //debugStack(mload(add(0x40, freePointer)),mload(add(0x60, freePointer)))
-
-                //let hash := keccak256(freePointer, updatedPointerValue)
+                revertIfZero(addr)
+                revertIfZero(tokenId)
                 let hash := getHashValue(addr, tokenId, 1)
                 val := sload(hash)
-                debugStack(hash,val)
+                //debugStack(mload(0x60),mload(0x80))
+                //debugStack(mload(0xa0),mload(0xc0))
+                //debugStack(hash,val)
             }
 
             function mint(sender, tokenId, amount ) -> bool {
-                //let freePointer := byte32ToMemoryWithoutUpdatingPointer(sender)
-
-                //mstore(add(0x20, freePointer), tokenId)
-                //mstore(add(0x40, freePointer), nonceForBalanceOf())
-                //debugStack(mload(freePointer),mload(add(0x40, freePointer)))
-                //let updatedPointerValue :=  add(0x60, freePointer)
-                //setFreeMemoryPointer( updatedPointerValue)
-                //debugStack(freePointer,updatedPointerValue)
-                //debugStack(mload(freePointer),mload(add(0x20, freePointer)))
-                //debugStack(mload(add(0x40, freePointer)),mload(add(0x60, freePointer)))
-                //let hash := keccak256(freePointer, updatedPointerValue)
-                let hash := getHashValue(sender, tokenId, 1)
+                revertIfZero(sender)
+                revertIfZero(amount)
+                let hash := getHashValue(sender, tokenId, nonceForBalanceOf())
                 let val := sload(hash)
-                //debugStack(hash,val)
-                //debugStack(hash,val)
                 sstore(hash, add(val, amount))
                 bool := 1
 
             }
 
             function burn(sender, tokenId, amount ) -> bool {
-                let freePointer := byte32ToMemoryWithoutUpdatingPointer(sender)
-
-                mstore(add(0x20, freePointer), tokenId)
-                mstore(add(0x40, freePointer), nonceForBalanceOf())
-                let updatedPointerValue :=  add(0x60, freePointer)
-                setFreeMemoryPointer( updatedPointerValue)
-
-                let hash := keccak256(freePointer, updatedPointerValue)
+                let hash := getHashValue(sender, tokenId, nonceForBalanceOf())
                 let val := sload(hash)
                 if gt(amount, val) {
                     revert(0,0)
                 }
                 sstore(hash, sub(val, amount))
                 bool := 1
+            }
+
+            function approveForAll(account, operator) -> bool {
+                 let hash := getHashValue(account, operator, nonceOperatorApprovals())
+                 sstore(hash, 1)
+                 bool := 1
+            }
+
+            function isApprovedForAll(account, operator) -> ret {
+                 let hash := getHashValue(account, operator, nonceOperatorApprovals())
+                 ret := sload(hash)
+            }
+
+            function safeTransferFrom(from, to, id, amount) {
+                if iszero(eq(from, from)) {
+                   if iszero(isApprovedForAll(from, from)) {
+                       revert(0,0)
+                   }
+                }
+
+
+                let fromHash := getHashValue(from, id, nonceForBalanceOf())
+                let toHash := getHashValue(to, id, nonceForBalanceOf())
+
+                let fromBalance := sload(fromHash)
+                let toBalance := sload(toHash)
+
+                if lt(fromBalance,amount) {
+                    revert(0,0)
+                }
+                sstore(fromHash, sub(fromBalance,amount))
+                sstore(toHash, add(toBalance,amount))
+
             }
 
 
