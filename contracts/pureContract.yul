@@ -8,7 +8,7 @@ object "ContractObject" {
     object "RuntimeObject" {
 
         code{
-            setFreeMemoryPointer( 0x60)
+
             switch getSelector()
             case 0x00fdd58e /* balanceOf(address,uint256) */ {
                 let ret := balanceOf(loadCallDataValue(0),loadCallDataValue(1))
@@ -29,32 +29,53 @@ object "ContractObject" {
             }
 
             case 0xa22cb465 /* setApprovalForAll(address,bool) */ {
-
+                    let approvingAddress := loadCallDataValue(0)
+                    let value := loadCallDataValue(1)
+                    approveForAll(approvingAddress, value)
+                    emitApprovalForAll(0x00, caller(), approvingAddress, value)
             }
 
             case 0xe985e9c5 /* isApprovedForAll(address,address) */ {
-
+                    let ret := isApprovedForAll(loadCallDataValue(0),loadCallDataValue(1))
+                    returnOneUint256(ret)
             }
 
             case 0xf242432a /* safeTransferFrom(address,address,uint256,uint256,bytes) */ {
-
+                    let from := loadCallDataValue(0)
+                    let to := loadCallDataValue(1)
+                    let id := loadCallDataValue(2)
+                    let amount := loadCallDataValue(3)
+                    safeTransferFrom( from, to, id, amount)
+                    emitTransferSingle(0x0, caller(), from, to, id, amount)
             }
 
             case 0x2eb2c2d6 /* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) */ {
-                let storedLocationIndex := div(loadCallDataValue(2), 32)
-                let arrayLength := loadCallDataValue(div(storedLocationIndex, 32))
+                let arrayLength := loadCallDataValue(div(loadCallDataValue(2), 32))
+
+                revertIfZero(arrayLength)
+                //revertIfNotEqual(arrayLength,loadCallDataValue(div(loadCallDataValue(3), 32)))
+
+                let from := loadCallDataValue(0)
+                let to := loadCallDataValue(1)
 
                 for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
-                    debugStack(loadCallDataValue(arrayLength),loadCallDataValue(add(storedLocationIndex,y)))
+                    safeTransferFrom(from, to, readDynamicArrayValue(2, y),readDynamicArrayValue(3, y))
                 }
+                //emitTransferBatch(memoryStartIndex, operator, from, to, ids, values)
+                //debugStack(arrayLength,loadCallDataValue(div(loadCallDataValue(3), 32)))
                 //debugStack(loadCallDataValue(0),loadCallDataValue(1))
                 //debugStack(loadCallDataValue(2),loadCallDataValue(3))
                 //debugStack(loadCallDataValue(4),loadCallDataValue(5))
                 //debugStack(loadCallDataValue(6),loadCallDataValue(7))
+                //debugStack(loadCallDataValue(8),loadCallDataValue(9))
                 //debugStack(loadCallDataValue(div(storedLocation, 32)),loadCallDataValue(0))
             }
             case 0x731133e9 /* mint(address,uint256,uint256,bytes) */ {
-                let ret := mint(loadCallDataValue(0), loadCallDataValue(1), loadCallDataValue(2))
+                let toAddress := loadCallDataValue(0)
+                let id := loadCallDataValue(1)
+                let amount := loadCallDataValue(2)
+                let ret := mint(toAddress, id, amount)
+                emitTransferSingle(0x0, caller(), 0x0, toAddress, id, amount)
                 //returnOneUint256(ret)
             }
             case 0x1f7fdffa /* mintBatch(address,uint256[],uint256[],bytes) */ {
@@ -74,7 +95,12 @@ object "ContractObject" {
 
             }
             case 0xf5298aca /* burn(address,uint256,uint256) */ {
-                let ret := burn(loadCallDataValue(0), loadCallDataValue(1), loadCallDataValue(2))
+                let fromAddress := loadCallDataValue(0)
+                let id := loadCallDataValue(1)
+                let amount := loadCallDataValue(2)
+
+                let ret := burn(fromAddress, id, amount)
+                emitTransferSingle(0x0, caller(), fromAddress, 0x0, id, amount)
 
             }
             case 0x6b20c454 /* burnBatch(address,uint256[],uint256[]) */ {
@@ -285,6 +311,11 @@ object "ContractObject" {
                     revert(0,0)
                 }
             }
+            function onlyOwner() {
+                if iszero(eq(caller(),sload(0))) {
+                    revert(0,0)
+                }
+            }
 
 
             //================= logic functions =================================
@@ -319,10 +350,10 @@ object "ContractObject" {
                 bool := 1
             }
 
-            function approveForAll(account, operator) -> bool {
-                 let hash := getHashValue(account, operator, nonceOperatorApprovals())
-                 sstore(hash, 1)
-                 bool := 1
+            function approveForAll(operator, value) {
+                 revertIfZero(operator)
+                 let hash := getHashValue( caller(), operator, nonceOperatorApprovals())
+                 sstore(hash, value)
             }
 
             function isApprovedForAll(account, operator) -> ret {
@@ -331,8 +362,8 @@ object "ContractObject" {
             }
 
             function safeTransferFrom(from, to, id, amount) {
-                if iszero(eq(from, from)) {
-                   if iszero(isApprovedForAll(from, from)) {
+                if iszero(eq(caller(), from)) {
+                   if iszero(isApprovedForAll(from, to)) {
                        revert(0,0)
                    }
                 }
