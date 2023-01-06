@@ -58,10 +58,25 @@ object "ContractObject" {
                 let from := loadCallDataValue(0)
                 let to := loadCallDataValue(1)
 
+                let startIndexFirstArray := 0xc0
+                let startIndexSecondArray := add(startIndexFirstArray, 0x20)
+
+                mstore(startIndexFirstArray, 0x40)
+                mstore(startIndexSecondArray, add(0x60, mul(0x20,arrayLength)))
+
+
+
+                let finalIndex := 0x0
+
+
                 for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
-                    safeTransferFrom(from, to, readDynamicArrayValue(2, y),readDynamicArrayValue(3, y))
+                    let firstValue := readDynamicArrayValue(2, y)
+                    let secondValue := readDynamicArrayValue(3, y)
+                    finalIndex := pushToVirtualMemoryLocation(startIndexFirstArray, startIndexFirstArray, firstValue)
+                    finalIndex := pushToVirtualMemoryLocation(startIndexSecondArray, startIndexFirstArray, secondValue)
+                    safeTransferFrom(from, to, firstValue, secondValue)
                 }
-                //emitTransferBatch(memoryStartIndex, operator, from, to, ids, values)
+                emitTransferBatch(startIndexFirstArray, finalIndex,caller(), from, to)
                 //debugStack(arrayLength,loadCallDataValue(div(loadCallDataValue(3), 32)))
                 //debugStack(loadCallDataValue(0),loadCallDataValue(1))
                 //debugStack(loadCallDataValue(2),loadCallDataValue(3))
@@ -249,6 +264,15 @@ object "ContractObject" {
                 finalPointer := add(finalPointer, 32)
 
             }
+            function pushToVirtualMemoryLocation(memPointerIndex, distanceToMemory, value) -> finalPointer {
+                let memPointerValue := add(mload(memPointerIndex), distanceToMemory)
+                let newArrayLength :=  add(mload(memPointerValue), 1)
+                mstore(memPointerValue, newArrayLength)
+                finalPointer := add(memPointerValue, mul(newArrayLength, 32))
+                mstore(finalPointer, value)
+                finalPointer := add(finalPointer, 0x20)
+
+            }
 
             function getHashValue( attr1, attr2, attr3) -> ret{
                 mstore(0x60,attr1)
@@ -268,17 +292,18 @@ object "ContractObject" {
                 mstore(add(0x20, memoryStartIndex), value)
              // ----TransferSingle(address,address,address,uint256,uint256) -----
                 let signature:= 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62
-                emitLog4(memoryStartIndex, add(0x40, memoryStartIndex),signature, operator, from, to)
+                emitLog4(memoryStartIndex, 0x40,signature, operator, from, to)
             }
-            function emitTransferBatch(memoryStartIndex, operator, from, to, ids, values){
-                //todo
-                //   emitLog4(memoryStartIndex, add( 0x40, memoryStartIndex), operator, from, to)
+            function emitTransferBatch(memoryStartIndex, memoryEndIndex, operator, from, to){
+               // ---TransferBatch(address,address,address,uint256[],uint256[]) ---
+                let signature:= 0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb
+                emitLog4(memoryStartIndex, sub(memoryEndIndex, memoryStartIndex), signature, operator, from, to)
             }
             function emitApprovalForAll(memoryStartIndex, account, operator, approved){
                 mstore(memoryStartIndex, approved)
              // ----- ApprovalForAll(address,address,bool) ----------
                 let signature:= 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31
-                emitLog3(memoryStartIndex, add(0x20, memoryStartIndex), signature, account, operator)
+                emitLog3(memoryStartIndex, 0x20, signature, account, operator)
             }
             function emitURI(memoryStartIndex ){
             //todo
@@ -291,14 +316,14 @@ object "ContractObject" {
                 emitLog3(0, 0, signature, value1, value2)
             }
 
-            function emitLog4(memoryStartIndex, memoryEndIndex, signature, t2, t3, t4){
-                log4(memoryStartIndex, memoryEndIndex, signature, t2, t3, t4)
+            function emitLog4(memoryStartIndex, offset, signature, t2, t3, t4){
+                log4(memoryStartIndex, offset, signature, t2, t3, t4)
             }
-            function emitLog3(memoryStartIndex, memoryEndIndex, signature, t2, t3){
-                log3(memoryStartIndex, memoryEndIndex, signature, t2, t3)
+            function emitLog3(memoryStartIndex, offset, signature, t2, t3){
+                log3(memoryStartIndex, offset, signature, t2, t3)
             }
-            function emitLog2(memoryStartIndex, memoryEndIndex, signature, t2){
-                log2(memoryStartIndex, memoryEndIndex, signature, t2)
+            function emitLog2(memoryStartIndex, offset, signature, t2){
+                log2(memoryStartIndex, offset, signature, t2)
             }
             //================= Error functions =================================
             function revertIfZero(amount) {
