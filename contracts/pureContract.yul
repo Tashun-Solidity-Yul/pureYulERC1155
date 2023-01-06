@@ -8,7 +8,7 @@ object "ContractObject" {
     object "RuntimeObject" {
 
         code{
-            setFreeMemoryPointer( 0x60)
+
             switch getSelector()
             case 0x00fdd58e /* balanceOf(address,uint256) */ {
                 let ret := balanceOf(loadCallDataValue(0),loadCallDataValue(1))
@@ -29,32 +29,68 @@ object "ContractObject" {
             }
 
             case 0xa22cb465 /* setApprovalForAll(address,bool) */ {
-
+                    let approvingAddress := loadCallDataValue(0)
+                    let value := loadCallDataValue(1)
+                    approveForAll(approvingAddress, value)
+                    emitApprovalForAll(0x00, caller(), approvingAddress, value)
             }
 
             case 0xe985e9c5 /* isApprovedForAll(address,address) */ {
-
+                    let ret := isApprovedForAll(loadCallDataValue(0),loadCallDataValue(1))
+                    returnOneUint256(ret)
             }
 
             case 0xf242432a /* safeTransferFrom(address,address,uint256,uint256,bytes) */ {
-
+                    let from := loadCallDataValue(0)
+                    let to := loadCallDataValue(1)
+                    let id := loadCallDataValue(2)
+                    let amount := loadCallDataValue(3)
+                    safeTransferFrom( from, to, id, amount)
+                    emitTransferSingle(0x0, caller(), from, to, id, amount)
             }
 
             case 0x2eb2c2d6 /* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) */ {
-                let storedLocationIndex := div(loadCallDataValue(2), 32)
-                let arrayLength := loadCallDataValue(div(storedLocationIndex, 32))
+                let arrayLength := loadCallDataValue(div(loadCallDataValue(2), 32))
+
+                revertIfZero(arrayLength)
+                //revertIfNotEqual(arrayLength,loadCallDataValue(div(loadCallDataValue(3), 32)))
+
+                let from := loadCallDataValue(0)
+                let to := loadCallDataValue(1)
+
+                let startIndexFirstArray := 0xc0
+                let startIndexSecondArray := add(startIndexFirstArray, 0x20)
+
+                mstore(startIndexFirstArray, 0x40)
+                mstore(startIndexSecondArray, add(0x60, mul(0x20,arrayLength)))
+
+
+
+                let finalIndex := 0x0
+
 
                 for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
-                    debugStack(loadCallDataValue(arrayLength),loadCallDataValue(add(storedLocationIndex,y)))
+                    let firstValue := readDynamicArrayValue(2, y)
+                    let secondValue := readDynamicArrayValue(3, y)
+                    finalIndex := pushToVirtualMemoryLocation(startIndexFirstArray, startIndexFirstArray, firstValue)
+                    finalIndex := pushToVirtualMemoryLocation(startIndexSecondArray, startIndexFirstArray, secondValue)
+                    safeTransferFrom(from, to, firstValue, secondValue)
                 }
+                emitTransferBatch(startIndexFirstArray, finalIndex,caller(), from, to)
+                //debugStack(arrayLength,loadCallDataValue(div(loadCallDataValue(3), 32)))
                 //debugStack(loadCallDataValue(0),loadCallDataValue(1))
                 //debugStack(loadCallDataValue(2),loadCallDataValue(3))
                 //debugStack(loadCallDataValue(4),loadCallDataValue(5))
                 //debugStack(loadCallDataValue(6),loadCallDataValue(7))
+                //debugStack(loadCallDataValue(8),loadCallDataValue(9))
                 //debugStack(loadCallDataValue(div(storedLocation, 32)),loadCallDataValue(0))
             }
             case 0x731133e9 /* mint(address,uint256,uint256,bytes) */ {
-                let ret := mint(loadCallDataValue(0), loadCallDataValue(1), loadCallDataValue(2))
+                let toAddress := loadCallDataValue(0)
+                let id := loadCallDataValue(1)
+                let amount := loadCallDataValue(2)
+                let ret := mint(toAddress, id, amount)
+                emitTransferSingle(0x0, caller(), 0x0, toAddress, id, amount)
                 //returnOneUint256(ret)
             }
             case 0x1f7fdffa /* mintBatch(address,uint256[],uint256[],bytes) */ {
@@ -74,7 +110,12 @@ object "ContractObject" {
 
             }
             case 0xf5298aca /* burn(address,uint256,uint256) */ {
-                let ret := burn(loadCallDataValue(0), loadCallDataValue(1), loadCallDataValue(2))
+                let fromAddress := loadCallDataValue(0)
+                let id := loadCallDataValue(1)
+                let amount := loadCallDataValue(2)
+
+                let ret := burn(fromAddress, id, amount)
+                emitTransferSingle(0x0, caller(), fromAddress, 0x0, id, amount)
 
             }
             case 0x6b20c454 /* burnBatch(address,uint256[],uint256[]) */ {
@@ -223,6 +264,15 @@ object "ContractObject" {
                 finalPointer := add(finalPointer, 32)
 
             }
+            function pushToVirtualMemoryLocation(memPointerIndex, distanceToMemory, value) -> finalPointer {
+                let memPointerValue := add(mload(memPointerIndex), distanceToMemory)
+                let newArrayLength :=  add(mload(memPointerValue), 1)
+                mstore(memPointerValue, newArrayLength)
+                finalPointer := add(memPointerValue, mul(newArrayLength, 32))
+                mstore(finalPointer, value)
+                finalPointer := add(finalPointer, 0x20)
+
+            }
 
             function getHashValue( attr1, attr2, attr3) -> ret{
                 mstore(0x60,attr1)
@@ -242,17 +292,18 @@ object "ContractObject" {
                 mstore(add(0x20, memoryStartIndex), value)
              // ----TransferSingle(address,address,address,uint256,uint256) -----
                 let signature:= 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62
-                emitLog4(memoryStartIndex, add(0x40, memoryStartIndex),signature, operator, from, to)
+                emitLog4(memoryStartIndex, 0x40,signature, operator, from, to)
             }
-            function emitTransferBatch(memoryStartIndex, operator, from, to, ids, values){
-                //todo
-                //   emitLog4(memoryStartIndex, add( 0x40, memoryStartIndex), operator, from, to)
+            function emitTransferBatch(memoryStartIndex, memoryEndIndex, operator, from, to){
+               // ---TransferBatch(address,address,address,uint256[],uint256[]) ---
+                let signature:= 0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb
+                emitLog4(memoryStartIndex, sub(memoryEndIndex, memoryStartIndex), signature, operator, from, to)
             }
             function emitApprovalForAll(memoryStartIndex, account, operator, approved){
                 mstore(memoryStartIndex, approved)
              // ----- ApprovalForAll(address,address,bool) ----------
                 let signature:= 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31
-                emitLog3(memoryStartIndex, add(0x20, memoryStartIndex), signature, account, operator)
+                emitLog3(memoryStartIndex, 0x20, signature, account, operator)
             }
             function emitURI(memoryStartIndex ){
             //todo
@@ -265,14 +316,14 @@ object "ContractObject" {
                 emitLog3(0, 0, signature, value1, value2)
             }
 
-            function emitLog4(memoryStartIndex, memoryEndIndex, signature, t2, t3, t4){
-                log4(memoryStartIndex, memoryEndIndex, signature, t2, t3, t4)
+            function emitLog4(memoryStartIndex, offset, signature, t2, t3, t4){
+                log4(memoryStartIndex, offset, signature, t2, t3, t4)
             }
-            function emitLog3(memoryStartIndex, memoryEndIndex, signature, t2, t3){
-                log3(memoryStartIndex, memoryEndIndex, signature, t2, t3)
+            function emitLog3(memoryStartIndex, offset, signature, t2, t3){
+                log3(memoryStartIndex, offset, signature, t2, t3)
             }
-            function emitLog2(memoryStartIndex, memoryEndIndex, signature, t2){
-                log2(memoryStartIndex, memoryEndIndex, signature, t2)
+            function emitLog2(memoryStartIndex, offset, signature, t2){
+                log2(memoryStartIndex, offset, signature, t2)
             }
             //================= Error functions =================================
             function revertIfZero(amount) {
@@ -282,6 +333,11 @@ object "ContractObject" {
             }
             function revertIfNotEqual(amount1, amount2) {
                 if iszero(eq(amount1,amount2)) {
+                    revert(0,0)
+                }
+            }
+            function onlyOwner() {
+                if iszero(eq(caller(),sload(0))) {
                     revert(0,0)
                 }
             }
@@ -319,10 +375,10 @@ object "ContractObject" {
                 bool := 1
             }
 
-            function approveForAll(account, operator) -> bool {
-                 let hash := getHashValue(account, operator, nonceOperatorApprovals())
-                 sstore(hash, 1)
-                 bool := 1
+            function approveForAll(operator, value) {
+                 revertIfZero(operator)
+                 let hash := getHashValue( caller(), operator, nonceOperatorApprovals())
+                 sstore(hash, value)
             }
 
             function isApprovedForAll(account, operator) -> ret {
@@ -331,8 +387,8 @@ object "ContractObject" {
             }
 
             function safeTransferFrom(from, to, id, amount) {
-                if iszero(eq(from, from)) {
-                   if iszero(isApprovedForAll(from, from)) {
+                if iszero(eq(caller(), from)) {
+                   if iszero(isApprovedForAll(from, to)) {
                        revert(0,0)
                    }
                 }
