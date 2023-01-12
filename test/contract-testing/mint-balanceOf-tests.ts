@@ -135,17 +135,17 @@ describe("Pure Yul ERC1155 - Mint Function Testing", function () {
 
         })
 
-        it("Mint Multiple using multiple transactions and multiple users", async () => {
-            const mint1 = await contract.mint(user1.address, 5, 2000, 0x0);
-            const mint6 = await contract.mint(user2.address, 5, 500, 0x0);
-            const mint2 = await contract.mint(user1.address, 5, 1000, 0x0);
-            const mint7 = await contract.mint(user2.address, 5, 500, 0x0);
-            const mint3 = await contract.mint(user1.address, 5, 2000, 0x0);
-            const mint4 = await contract.mint(user1.address, 5, 500, 0x0);
-            const mint8 = await contract.mint(user2.address, 5, 1000, 0x0);
-            const mint5 = await contract.mint(user1.address, 5, 6, 0x0);
-            const mint9 = await contract.mint(user2.address, 5, 1500, 0x0);
-            const mint10 = await contract.mint(user2.address, 5, 8, 0x0);
+        it("Mint Multiple using multiple transactions and multiple users, tnx by multi users", async () => {
+            const mint1 = await contract.connect(user1).mint(user1.address, 6, 2000, 0x0);
+            const mint6 = await contract.connect(user2).mint(user2.address, 6, 500, 0x0);
+            const mint2 = await contract.connect(user2).mint(user1.address, 6, 1000, 0x0);
+            const mint7 = await contract.connect(user2).mint(user2.address, 6, 500, 0x0);
+            const mint3 = await contract.connect(user2).mint(user1.address, 6, 2000, 0x0);
+            const mint4 = await contract.connect(user2).mint(user1.address, 6, 500, 0x0);
+            const mint8 = await contract.connect(user1).mint(user2.address, 6, 1000, 0x0);
+            const mint5 = await contract.connect(user1).mint(user1.address, 6, 6, 0x0);
+            const mint9 = await contract.connect(user2).mint(user2.address, 6, 1500, 0x0);
+            const mint10 = await contract.connect(user2).mint(user2.address, 6, 8, 0x0);
             const receipt1 = await mint1.wait();
             const receipt2 = await mint2.wait();
             const receipt3 = await mint3.wait();
@@ -160,16 +160,16 @@ describe("Pure Yul ERC1155 - Mint Function Testing", function () {
             expect(await contract.balanceOf(user1.address, 5), "Mint Multiple using multiple transactions and multiple users balance is wrong").to.be.equal(5506);
             expect(await contract.balanceOf(user2.address, 5), "Mint Multiple using multiple transactions and multiple users balance is wrong").to.be.equal(3508);
 
-            testTransferSingleEmitResults(10,receipt1,deployer,user1,5,2000);
-            testTransferSingleEmitResults(11,receipt2,deployer,user1,5,1000);
-            testTransferSingleEmitResults(12,receipt3,deployer,user1,5,2000);
-            testTransferSingleEmitResults(13,receipt4,deployer,user1,5,500);
-            testTransferSingleEmitResults(14,receipt5,deployer,user1,5,6);
-            testTransferSingleEmitResults(15,receipt6,deployer,user2,5,500);
-            testTransferSingleEmitResults(16,receipt7,deployer,user2,5,500);
-            testTransferSingleEmitResults(17,receipt8,deployer,user2,5,1000);
-            testTransferSingleEmitResults(18,receipt9,deployer,user2,5,1500);
-            testTransferSingleEmitResults(19,receipt10,deployer,user2,5,8);
+            testTransferSingleEmitResults(21,receipt2,user2,user1,6,1000);
+            testTransferSingleEmitResults(20,receipt1,user1,user1,6,2000);
+            testTransferSingleEmitResults(22,receipt3,user2,user1,6,2000);
+            testTransferSingleEmitResults(23,receipt4,user2,user1,6,500);
+            testTransferSingleEmitResults(24,receipt5,user1,user1,6,6);
+            testTransferSingleEmitResults(25,receipt6,user2,user2,6,500);
+            testTransferSingleEmitResults(26,receipt7,user2,user2,6,500);
+            testTransferSingleEmitResults(27,receipt8,user1,user2,6,1000);
+            testTransferSingleEmitResults(28,receipt9,user2,user2,6,1500);
+            testTransferSingleEmitResults(29,receipt10,user2,user2,6,8);
 
         })
 
