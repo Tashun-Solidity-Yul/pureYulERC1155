@@ -1,19 +1,11 @@
 import {expect} from "chai";
 import {ethers} from "hardhat";
-import {compileSelected, findAFile, getFilteredByteCode,} from "../../yul-compiler";
-import {getSigner} from "@nomiclabs/hardhat-ethers/internal/helpers";
+import {findAFile, getFilteredByteCode,} from "../../yul-compiler";
 import fs from "fs";
-import {BigNumber, Contract} from "ethers";
+import { Contract} from "ethers";
+import {readJson} from "./util";
 
-export function readJson(path: string) {
-    // console.log(path)
-    const fileRead = fs.readFileSync('.\\' + path, 'utf8');
-    try {
-        return (JSON.parse(fileRead))
-    } catch (err) {
-        console.error(err)
-    }
-}
+
 
 describe("Pure Yul ERC1155 - mintBatch Function Testing", function () {
     let deployer, user1: any, user2: any;
