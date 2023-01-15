@@ -10,6 +10,12 @@ export function readJson(path: string) {
     }
 }
 
+export enum DATA_TYPE {
+    UINT256= "uint256",
+    ADDRESS= "address",
+    BOOL= "bool",
+}
+
 export function getDecodeTwoUint256DynamicArrays(data: string) {
     try {
         const [array1, array2] = ethers.utils.defaultAbiCoder.decode(
@@ -34,13 +40,13 @@ export function getDecodeOneUint256DynamicArray(data: string) {
     }
 }
 
-export function getDecodedSingleValue(data: string) {
+export function getDecodedSingleValue(data: string, dataType: DATA_TYPE) {
     try {
-        const [array1, array2] = ethers.utils.defaultAbiCoder.decode(
-            ['uint256'],
+        const [value] = ethers.utils.defaultAbiCoder.decode(
+            [dataType],
             ethers.utils.hexDataSlice(data, 0)
         )
-        return [array1, array2];
+        return value;
     } catch (err) {
         console.error(err)
     }
