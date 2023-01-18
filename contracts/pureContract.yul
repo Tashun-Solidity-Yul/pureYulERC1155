@@ -11,10 +11,16 @@ object "ContractObject" {
         code{
 
             switch getSelector()
+
+
+
             case 0x00fdd58e /* balanceOf(address,uint256) */ {
                 let ret := balanceOf(loadCallDataValueFromIndex(0),loadCallDataValueFromIndex(1))
                 returnOneUint256(ret)
             }
+
+
+
             case 0x4e1273f4 /* balanceOfBatch(address[],uint256[]) */ {
 
                 let arrayLength := loadCallDataValueFromIndex(div(loadCallDataValueFromIndex(0), 32))
@@ -33,6 +39,9 @@ object "ContractObject" {
                 return(0x0, finalPointer)
             }
 
+
+            
+
             case 0xa22cb465 /* setApprovalForAll(address,bool) */ {
                     let approvingAddress := loadCallDataValueFromIndex(0)
                     let value := loadCallDataValueFromIndex(1)
@@ -40,10 +49,15 @@ object "ContractObject" {
                     emitApprovalForAll(0x00, caller(), approvingAddress, value)
             }
 
+
+
+
             case 0xe985e9c5 /* isApprovedForAll(address,address) */ {
                     let ret := isApprovedForAll(loadCallDataValueFromIndex(0),loadCallDataValueFromIndex(1))
                     returnOneUint256(ret)
             }
+
+
 
             case 0xf242432a /* safeTransferFrom(address,address,uint256,uint256,bytes) */ {
                     let from := loadCallDataValueFromIndex(0)
@@ -76,6 +90,7 @@ object "ContractObject" {
 
                 let finalIndex := 0x0
 
+                // Copy two arrays to memory
                 for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
                     let firstValue := readDynamicArrayValue(2, y)
                     let secondValue := readDynamicArrayValue(3, y)
@@ -163,6 +178,7 @@ object "ContractObject" {
 
                 let finalIndex := 0x0
 
+                // Copy two arrays to memory
                 for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
 
                     let tokenId := readDynamicArrayValue(1, y)
@@ -328,9 +344,7 @@ object "ContractObject" {
                 let dataLengthInBytes := mul(loadCallDataValueFromIndex(div(dataOffset, 32)), 0x20)
                 let initialCallDataPosition := add(dataOffset,4)
 
-                //mstore(lengthPositionIndex,dataLength)
-                //finalIndex := add(lengthPositionIndex,0x40)
-                //mstore(memPointerIndex, lengthPositionIndex)
+
                 mstore(lengthPositionIndex, dataLength)
                 finalIndex := add(lengthPositionIndex,0x20)
 
