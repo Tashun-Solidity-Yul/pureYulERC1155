@@ -1,5 +1,6 @@
 object "ContractObject" {
     code {
+        // todo - add deploy variables
         sstore(0, caller())
         datacopy(0, dataoffset("RuntimeObject"),datasize("RuntimeObject"))
         return(0x0, datasize("RuntimeObject"))
@@ -49,10 +50,11 @@ object "ContractObject" {
                     let to := loadCallDataValueFromIndex(1)
                     let id := loadCallDataValueFromIndex(2)
                     let amount := loadCallDataValueFromIndex(3)
-                    checkIfSenderAuthorized(from, to)
+                    let dataOffset := loadCallDataValueFromIndex(4)
+                    checkIfSenderAuthorized(from)
                     safeTransferFrom( from, to, id, amount)
                     emitTransferSingle(0x0, caller(), from, to, id, amount)
-                    //todo _doSafeBatchTransferAcceptanceCheck
+                    _doSafeTransferAcceptanceCheck(caller(), from, to, id, amount, dataOffset )
             }
 
             case 0x2eb2c2d6 /* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) */ {
@@ -60,14 +62,14 @@ object "ContractObject" {
 
                 // Check if array lengths are zero or array lengths are different in length
                 revertIfZero(arrayLength)
-                revertIfNotEqual(arrayLength,loadCallDataValueFromIndex(div(loadCallDataValueFromIndex(3), 32)))
+                revertIfArrayLengthMismatch(arrayLength,loadCallDataValueFromIndex(div(loadCallDataValueFromIndex(3), 32)))
 
                 let from := loadCallDataValueFromIndex(0)
                 let to := loadCallDataValueFromIndex(1)
-                revertIfZero(to)
+                checkIfToAddressIsZero(to)
 
 
-                checkIfSenderAuthorized(from, to)
+                checkIfSenderAuthorized(from)
 
                 // setup data to add two dynamic array to memory
                 setupMetaDataToAddMultipleArraysToMemory(arrayLength)
@@ -88,16 +90,19 @@ object "ContractObject" {
                 }
 
                 emitTransferBatch(startMemoryCopyDynamicArray1(), finalIndex,caller(), from, to)
-                // todo _doSafeBatchTransferAcceptanceCheck
+                _doSafeBatchTransferAcceptanceCheck(caller(), from, to, loadCallDataValueFromIndex(4), arrayLength, finalIndex)
+
             }
             case 0x731133e9 /* mint(address,uint256,uint256,bytes) */ {
                 let toAddress := loadCallDataValueFromIndex(0)
                 revertIfZero(toAddress)
                 let id := loadCallDataValueFromIndex(1)
                 let amount := loadCallDataValueFromIndex(2)
+                let dataOffset := loadCallDataValueFromIndex(3)
+
                 let ret := mint(toAddress, id, amount)
                 emitTransferSingle(0x0, caller(), 0x0, toAddress, id, amount)
-                //todo _doSafeBatchTransferAcceptanceCheck
+                _doSafeTransferAcceptanceCheck(caller(), 0, toAddress, id, amount, dataOffset )
             }
 
             case 0x1f7fdffa /* mintBatch(address,uint256[],uint256[],bytes) */ {
@@ -128,8 +133,8 @@ object "ContractObject" {
                     pop(mint(toAddress, tokenId, amount))
 
                 }
-                emitTransferBatch(startMemoryCopyDynamicArray1(), finalIndex,caller(), 0x0, toAddress)
-                // todo _doSafeBatchTransferAcceptanceCheck
+                emitTransferBatch(startMemoryCopyDynamicArray1(), finalIndex, caller(), 0x0, toAddress)
+                _doSafeBatchTransferAcceptanceCheck(caller(), 0x00, toAddress, loadCallDataValueFromIndex(3), arrayLength, finalIndex)
             }
             case 0xf5298aca /* burn(address,uint256,uint256) */ {
                 let fromAddress := loadCallDataValueFromIndex(0)
@@ -173,95 +178,6 @@ object "ContractObject" {
 
                 }
                 emitTransferBatch(startMemoryCopyDynamicArray1(), finalIndex,caller(), fromAddress, 0x0)
-            }
-            case 0x7f2c00d3 /* doSafeTransferAcceptanceCheck(address,address,address,uint256,uint256,bytes) */ {
-                let operator := loadCallDataValueFromIndex(0)
-                let from := loadCallDataValueFromIndex(1)
-                let to := loadCallDataValueFromIndex(2)
-                let id := loadCallDataValueFromIndex(3)
-                let amount := loadCallDataValueFromIndex(4)
-                let dataOffset := loadCallDataValueFromIndex(5)
-
-
-                mstore(0x0,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))
-                mstore(0x4,from)
-                mstore(0x24,to)
-                mstore(0x44,id)
-                mstore(0x64,amount)
-                mstore(0x84,0xa4)
-
-                let finalIndex :=addBytesToMemory(dataOffset, 0xa4)
-
-
-                if extcodesize(to){
-                    let success := call(gas(), to, 0, 0 , add(finalIndex, 0x20),0x00, returndatasize())
-                    if iszero(success) {
-                        if iszero(returndatasize()) {
-                            revertWithNonErc1155ReceiverImplementer()
-                        }
-                        mstore(0x00, 0x8c379a000000000000000000000000000000000000000000000000000000000)
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x00, returndatasize())
-                    }
-                    let response := and(mload(0x00), 0xffffffff00000000000000000000000000000000000000000000000000000000)
-                    if iszero(eq(response,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))) {
-                           revertWithTokenRejection()
-                    }
-                    calldatacopy(0,0,codesize())
-                debugMemoryAndStack(codesize(), success, 0xa4, codesize())
-                }
-
-            }
-            case 0x395649f6 /* doSafeBatchTransferAcceptanceCheck(address,address,address,uint256[],uint256[],bytes) */ {
-                let arrayLength := loadCallDataValueFromIndex(div(loadCallDataValueFromIndex(3), 32))
-
-                let operator := loadCallDataValueFromIndex(0)
-                let from := loadCallDataValueFromIndex(1)
-                let to := loadCallDataValueFromIndex(2)
-                let dataOffset := loadCallDataValueFromIndex(5)
-
-
-                mstore(0x00,mul(0xbc197c81,0x100000000000000000000000000000000000000000000000000000000))
-                mstore(0x04,from)
-                mstore(0x24,to)
-
-                mstore(0x44, 0xa0)
-                mstore(0x64, add(0xc0, mul(0x20,arrayLength)))
-                mstore(0x84, add(0xe0, mul(0x40,arrayLength)))
-
-                let finalIndex := 0x0
-
-                for {let y := 1} iszero(gt(y,arrayLength)) { y:= add(y,1)} {
-                    let tokenId := readDynamicArrayValue(3, y)
-                    let amount := readDynamicArrayValue(4, y)
-
-
-                    // get first array data to memory
-                    pop(pushToVirtualMemoryLocation(0x44, 0x44, tokenId))
-
-                    // get second array data to memory
-                    finalIndex := pushToVirtualMemoryLocation(0x64, 0x44, amount)
-
-                }
-
-                //let byteSize := calldataload(add(dataOffset,4))
-
-                finalIndex :=addBytesToMemory(dataOffset, finalIndex)
-
-
-                if extcodesize(to){
-                    let success := call(gas(), to, 0, 0x00 , add(finalIndex, 0x20),0x00, returndatasize())
-                    if iszero(success) {
-                        mstore(0x00, 0x8c379a000000000000000000000000000000000000000000000000000000000)
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x00, returndatasize())
-                    }
-                    let response := and(mload(0x00), 0xffffffff00000000000000000000000000000000000000000000000000000000)
-                    if iszero(eq(response,mul(0xbc197c81,0x100000000000000000000000000000000000000000000000000000000))) {
-                           revertWithTokenRejection()
-                    }
-                debugMemoryAndStack(and(sload(0), 0xffffffffffffffffffffffffffffffffffffffff), calldataload(add(add(dataOffset,4), 0x20)), 0x00, add(finalIndex, 0x100))
-                }
             }
 
             case 0x01ffc9a7 /* supportsInterface(bytes4) */ {
@@ -406,14 +322,17 @@ object "ContractObject" {
                 ret := keccak256(0x60,0x60)
             }
 
-            function addBytesToMemory(dataOffset, freeIndex) -> finalIndex {
+            function addBytesToMemory(dataOffset, lengthPositionIndex) -> finalIndex {
 
                 let dataLength := loadCallDataValueFromIndex(div(dataOffset, 32))
                 let dataLengthInBytes := mul(loadCallDataValueFromIndex(div(dataOffset, 32)), 0x20)
                 let initialCallDataPosition := add(dataOffset,4)
 
-                mstore(freeIndex,dataLength)
-                finalIndex := add(freeIndex,0x40)
+                //mstore(lengthPositionIndex,dataLength)
+                //finalIndex := add(lengthPositionIndex,0x40)
+                //mstore(memPointerIndex, lengthPositionIndex)
+                mstore(lengthPositionIndex, dataLength)
+                finalIndex := add(lengthPositionIndex,0x20)
 
 
                 for {let y:= 0x20} iszero(gt(y,dataLengthInBytes)) {y:= add(y,0x20)} {
@@ -480,9 +399,20 @@ object "ContractObject" {
                     revert(0,0)
                 }
             }
+            function checkIfToAddressIsZero(addr){
+                if eq(addr,0) {
+                    revertWithTransferToZeroAddress()
+                }
+            }
             function revertIfNotEqual(amount1, amount2) {
                 if iszero(eq(amount1,amount2)) {
                     revert(0,0)
+                }
+            }
+
+            function revertIfArrayLengthMismatch(value1, value2){
+                if iszero(eq(value1, value2)) {
+                    revertWithAccountAndIdLengthMismatch()
                 }
             }
             function revertIfEqual(amount1, amount2) {
@@ -602,11 +532,11 @@ object "ContractObject" {
                revert(0,0x84)
             }
 
-            function checkIfSenderAuthorized(from, to) {
+            function checkIfSenderAuthorized(from) {
                if iszero(eq(caller(), from)) {
                    // check if the msg.sender and from address is different, whether from address in approved for the operation
-                   if iszero(isApprovedForAll(from, to)) {
-                       revert(0,0)
+                   if iszero(isApprovedForAll(from, caller())) {
+                       revertWithCallerIsNotOwnerOrApproved()
                    }
                }
             }
@@ -655,7 +585,6 @@ object "ContractObject" {
 
             function safeTransferFrom(from, to, id, amount) {
 
-                revertIfZero(to)
 
                 let fromHash := getHashValue(from, id, nonceForBalanceOf())
                 let toHash := getHashValue(to, id, nonceForBalanceOf())
@@ -665,10 +594,96 @@ object "ContractObject" {
 
                 // underflow check - overflow check is not considered due to low possibility
                 if lt(fromBalance,amount) {
-                    revert(0,0)
+                    revertWithInsufficientBalanceToTransfer()
                 }
                 sstore(fromHash, sub(fromBalance,amount))
                 sstore(toHash, add(toBalance,amount))
+
+            }
+
+            function _doSafeTransferAcceptanceCheck(operator, from, to, id, amount, dataOffset) {
+                //let operator := loadCallDataValueFromIndex(0)
+                //let from := loadCallDataValueFromIndex(1)
+                //let to := loadCallDataValueFromIndex(2)
+                //let id := loadCallDataValueFromIndex(3)
+                //let amount := loadCallDataValueFromIndex(4)
+                //let dataOffset := loadCallDataValueFromIndex(5)
+
+
+                //mstore(0x0,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))
+                //mstore(0x4,operator)
+                //mstore(0x24,from)
+                //mstore(0x44,id)
+                //mstore(0x64,amount)
+                //mstore(0x84,0xa0)
+
+                mstore(0x00,0xf23a6e61)
+                mstore(0x20,operator)
+                mstore(0x40,from)
+                mstore(0x60,id)
+                mstore(0x80,amount)
+                mstore(0xa0,0xc0)
+
+                let finalIndex := addBytesToMemory(dataOffset, 0xc0)
+
+                if extcodesize(to){
+                    let success := call(gas(), to, 0, 0x1c , sub(finalIndex,28),0x00, 0x04)
+                    if iszero(success) {
+                        mstore(0x00, 0x8c379a000000000000000000000000000000000000000000000000000000000)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x00, returndatasize())
+                    }
+                    let response := and(mload(0x00), 0xffffffff00000000000000000000000000000000000000000000000000000000)
+                    if iszero(eq(response,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))) {
+                           revertWithERC1155ReceiverRejectedTokens()
+                    }
+                 debugMemoryAndStack(mload(0x00), success, 0x1c, sub(finalIndex,28))
+                }
+
+                //if extcodesize(to){
+                //    let success := call(gas(), to, 0, 0x1c , sub(finalIndex,28),0x00, 0x04)
+                //    if iszero(success) {
+                //        if iszero(returndatasize()) {
+                //            revertWithNonErc1155ReceiverImplementer()
+                //        }
+                //        mstore(0x00, 0x8c379a000000000000000000000000000000000000000000000000000000000)
+                //        returndatacopy(0x0, 0x0, returndatasize())
+                 //       revert(0x00, returndatasize())
+                  //  }
+                 //   let response := and(mload(0x00), 0xffffffff00000000000000000000000000000000000000000000000000000000)
+                 //   if iszero(eq(response,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))) {
+                //           revertWithERC1155ReceiverRejectedTokens()
+                 //   }
+                 //   calldatacopy(0,0,codesize())
+                //debugMemoryAndStack(codesize(), success, 0xa4, codesize())
+               // }
+            }
+
+            function _doSafeBatchTransferAcceptanceCheck(operator, from, to, data, arrayLength, freeIndex) {
+
+                mstore(0x00,0xbc197c81)
+                mstore(0x20,operator)
+                mstore(0x40,from)
+
+                mstore(0x60, add(mload(startMemoryCopyDynamicArray1()),0xa0))
+                mstore(0x80, add(mload(startMemoryCopyDynamicArray2()),0xa0))
+                mstore(0xa0, freeIndex)
+
+                let finalIndex := addBytesToMemory(data, freeIndex)
+
+                if extcodesize(to){
+                    let success := call(gas(), to, 0, 0x1c , sub(finalIndex,28),0x00, 0x04)
+                    if iszero(success) {
+                        mstore(0x00, 0x8c379a000000000000000000000000000000000000000000000000000000000)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x00, returndatasize())
+                    }
+                    let response := and(mload(0x00), 0xffffffff00000000000000000000000000000000000000000000000000000000)
+                    if iszero(eq(response,mul(0xbc197c81,0x100000000000000000000000000000000000000000000000000000000))) {
+                           revertWithERC1155ReceiverRejectedTokens()
+                    }
+                 debugMemoryAndStack(mload(0x00), success, 0x1c, sub(finalIndex,28))
+                }
 
             }
 
