@@ -1,25 +1,4 @@
-`approvalChecks` `ok+` 
-`balanceof-batch-test` `need to check logic`
-`burn-batch-tests` `ok`
-`burn-tests` `ok`
-`mint-balanceOf-tests` `ok`
-`mint-batch-tests` `ok`
-`safeBatchTransfer` `ok`
-`safeTransferFrom` `ok`
 
-balanceOf - done
-balanceOfBatch - done
-setApprovalForAll - done
-isApprovedForAll - done
-safeTransferFrom - todo _doSafeTransferAcceptanceCheck
-safeBatchTransferFrom  - done
-mint - todo
-mintBatch - todo
-burn - done
-burnBatch - done
-doSafeTransferAcceptanceCheck- done
-doSafeBatchTransferAcceptanceCheck- done
-supportsInterface- done
 
 
 Removed the Free Memory pointer concept, tried reusing memory
