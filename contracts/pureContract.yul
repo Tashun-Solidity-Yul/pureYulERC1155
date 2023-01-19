@@ -616,20 +616,6 @@ object "ContractObject" {
             }
 
             function _doSafeTransferAcceptanceCheck(operator, from, to, id, amount, dataOffset) {
-                //let operator := loadCallDataValueFromIndex(0)
-                //let from := loadCallDataValueFromIndex(1)
-                //let to := loadCallDataValueFromIndex(2)
-                //let id := loadCallDataValueFromIndex(3)
-                //let amount := loadCallDataValueFromIndex(4)
-                //let dataOffset := loadCallDataValueFromIndex(5)
-
-
-                //mstore(0x0,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))
-                //mstore(0x4,operator)
-                //mstore(0x24,from)
-                //mstore(0x44,id)
-                //mstore(0x64,amount)
-                //mstore(0x84,0xa0)
 
                 mstore(0x00,0xf23a6e61)
                 mstore(0x20,operator)
@@ -653,24 +639,6 @@ object "ContractObject" {
                     }
                  debugMemoryAndStack(mload(0x00), success, 0x1c, sub(finalIndex,28))
                 }
-
-                //if extcodesize(to){
-                //    let success := call(gas(), to, 0, 0x1c , sub(finalIndex,28),0x00, 0x04)
-                //    if iszero(success) {
-                //        if iszero(returndatasize()) {
-                //            revertWithNonErc1155ReceiverImplementer()
-                //        }
-                //        mstore(0x00, 0x8c379a000000000000000000000000000000000000000000000000000000000)
-                //        returndatacopy(0x0, 0x0, returndatasize())
-                 //       revert(0x00, returndatasize())
-                  //  }
-                 //   let response := and(mload(0x00), 0xffffffff00000000000000000000000000000000000000000000000000000000)
-                 //   if iszero(eq(response,mul(0xf23a6e61,0x100000000000000000000000000000000000000000000000000000000))) {
-                //           revertWithERC1155ReceiverRejectedTokens()
-                 //   }
-                 //   calldatacopy(0,0,codesize())
-                //debugMemoryAndStack(codesize(), success, 0xa4, codesize())
-               // }
             }
 
             function _doSafeBatchTransferAcceptanceCheck(operator, from, to, data, arrayLength, freeIndex) {
