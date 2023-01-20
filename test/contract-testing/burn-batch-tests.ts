@@ -1,19 +1,31 @@
-import {expect} from "chai";
+import {assert, expect} from "chai";
 import {ethers} from "hardhat";
 import {compileSelected, findAFile, getFilteredByteCode,} from "../../yul-compiler";
 import {getSigner} from "@nomiclabs/hardhat-ethers/internal/helpers";
 import fs from "fs";
 import {BigNumber, Contract} from "ethers";
-import {getDecodedAddress, getDecodeTwoUint256DynamicArrays} from "./util";
+import {getDecodedAddress, getDecodeTwoUint256DynamicArrays, readJson} from "./util";
 
-export function readJson(path: string) {
-    // console.log(path)
-    const fileRead = fs.readFileSync('.\\' + path, 'utf8');
-    try {
-        return (JSON.parse(fileRead))
-    } catch (err) {
-        console.error(err)
-    }
+
+
+function testBatchTransferEvent(testId: number, receipt: any, deployer: any, user: any, tokenId: number, tokenAmount: number) {
+
+    const firstEvent = (receipt.events.filter((event: any) => {
+        return event?.topics[0] == '0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'
+    }))[0];
+    const verifyingTopic = firstEvent.topics;
+    const verifyingData = firstEvent.data;
+
+    expect(getDecodedAddress(verifyingTopic[1]), `TestId ${testId}, burn function test, TransferSingle Event check failed`).to.be.equal(deployer.address)
+    expect(getDecodedAddress(verifyingTopic[2]), `TestId ${testId}, burn function test, TransferSingle Event check failed`).to.be.equal(user.address)
+    expect(getDecodedAddress(verifyingTopic[3]), `TestId ${testId}, burn function test, TransferSingle Event check failed`).to.be.equal(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))
+
+
+    const decodedData = getDecodeTwoUint256DynamicArrays(verifyingData);
+    assert(decodedData, "Decode Error");
+    expect(decodedData[0], `TestId ${testId}, burn function test, Token Id is wrong`).to.be.an('array').that.does.not.include(ethers.BigNumber.from(tokenId));
+    expect(decodedData[1], `TestId ${testId}, burn function test, Token Amount is wrong`).to.be.an('array').that.does.not.include(ethers.BigNumber.from(tokenAmount));
+
 }
 
 describe("Pure Yul ERC1155 - burnBatch Function Testing", function () {
@@ -36,39 +48,25 @@ describe("Pure Yul ERC1155 - burnBatch Function Testing", function () {
 
          **/
         it("burn batch single token should burnt failed", async () => {
-            //todo approve check
             const tnx = await contract.burnBatch(user1.address, [1], [100_000]);
             const receipt = await tnx.wait()
 
-            const firstEvent = (receipt.events.filter((event: any) => {
-                return event?.topics[0] == '0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'
-            }))[0];
-            const verifyingTopic = firstEvent.topics;
-            const verifyingData = firstEvent.data;
-
-            expect(getDecodedAddress(verifyingTopic[1]), "receiver balance updated failed").to.be.equal(deployer.address)
-            expect(getDecodedAddress(verifyingTopic[2]), "receiver balance updated failed").to.be.equal(user1.address)
-            expect(getDecodedAddress(verifyingTopic[3]), "receiver balance updated failed").to.be.equal(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))
-
-
-            const decodedData = getDecodeTwoUint256DynamicArrays(verifyingData);
-            expect(decodedData, "").not.to.be.undefined;
-            expect(decodedData ? decodedData[0][0] : undefined, "").to.be.equal(1);
-            expect(decodedData ? decodedData[1][0] : undefined, "").to.be.equal(100000);
+            testBatchTransferEvent(1,receipt,deployer,user1,1,100_000);
 
         })
 
         it("burn batch multiple token should burnt failed", async () => {
             const tnx = await contract.burnBatch(user1.address, [2, 3], [800_000, 600_000]);
-            await tnx.wait()
-
-        })
+            const receipt = await tnx.wait()
 
 
-        after(async () => {
             expect(await contract.balanceOf(user1.address, 1), "burn batch single token balance is wrong").to.be.equal(900_000);
             expect(await contract.balanceOf(user1.address, 2), "burn batch multiple tokens balance is wrong").to.be.equal(200_000);
             expect(await contract.balanceOf(user1.address, 3), "burn batch multiple tokens balance is wrong").to.be.equal(400_000);
+
+            testBatchTransferEvent(2,receipt,deployer,user1,2,800_000);
+            testBatchTransferEvent(3,receipt,deployer,user1,3,600_000);
+
         })
 
     });
