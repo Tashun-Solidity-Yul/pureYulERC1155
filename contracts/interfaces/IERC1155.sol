@@ -123,4 +123,13 @@ interface IERC1155 is IERC165 {
         bytes calldata data
     ) external;
 
+//    function test() external view returns(bytes32);
+//    function test( uint256[] calldata a) external view returns(uint256[] memory);
+//    function test(uint256[] calldata a) external ;
+    function mint( address sender, uint256 tokenId, uint256 amount, bytes memory message) external;
+    function mintBatch( address sender, uint256[] calldata tokenIds, uint256[] calldata amounts ,bytes memory message) external;
+    function burn( address sender, uint256 tokenId, uint256 amount) external;
+    function burnBatch( address sender,uint256[] calldata tokenIds, uint256[] calldata amounts) external ;
+    function doSafeTransferAcceptanceCheck( address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) external;
+    function doSafeBatchTransferAcceptanceCheck( address operator, address from,address to, uint256[] calldata ids, uint256[] calldata amounts, bytes memory data) external;
 }
