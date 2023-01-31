@@ -165,7 +165,7 @@ describe("Pure Yul ERC1155 - mintBatch Function Testing", function () {
         })
 
 
-        it.only("mintBatch a multiple Tokens multiple transactions should batch mint failed", async () => {
+        it("mintBatch a multiple Tokens multiple transactions should batch mint failed", async () => {
             const mintBatch1 = await contract.mintBatch(validContract.address, [4, 5], [1, 10000], 0x0);
             const mintBatch2 = await contract.mintBatch(validContract.address, [4, 5], [2, 20500], 0x0);
             const mintBatch3 = await contract.mintBatch(validContract.address, [4, 5], [5, 19500], 0x0);
@@ -175,8 +175,6 @@ describe("Pure Yul ERC1155 - mintBatch Function Testing", function () {
             const receipt3 = await mintBatch3.wait();
             const receipt4 = await mintBatch4.wait();
 
-            console.log(receipt3.events[1].topics)
-            console.log(receipt3.events[1].data)
 
             expect(await contract.balanceOf(validContract.address, 4), "mintBatch a multiple Tokens multiple transactions balance is wrong").to.be.equal(220);
             expect(await contract.balanceOf(validContract.address, 5), "mintBatch a multiple Tokens multiple transactions balance is wrong").to.be.equal(52222);
