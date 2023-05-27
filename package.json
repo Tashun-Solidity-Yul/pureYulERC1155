@@ -4,7 +4,9 @@
   "description": "pure yul erc1155",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "test1": "npx hardhat test --legacy-peer-deps",
+    "test2": "npx hardhat test .\\test\\test.ts"
   },
   "author": "Tashun Chamara",
   "license": "MIT",
@@ -28,5 +30,8 @@
     "typechain": "^8.1.1",
     "typescript": "^4.9.4",
     "yaml": "^2.1.3"
+  },
+  "dependencies": {
+    "@gnosis.pm/safe-contracts": "^1.3.0"
   }
 }

@@ -2,8 +2,21 @@ object "ContractObject" {
     code {
         // todo - add deploy variables
         sstore(0, caller())
-        datacopy(0, dataoffset("RuntimeObject"),datasize("RuntimeObject"))
+        //copying more 0x20 to memory to extract the uint256
+        datacopy(0, dataoffset("RuntimeObject"),add(datasize("RuntimeObject"),0x20))
+        // uint256 is simply lies in the first 32 bytes hence simply extracting
+        let startPointer := sub(add(dataoffset("RuntimeObject"), datasize("RuntimeObject")),0x20)
+        sstore(5, mload(startPointer))
+        //sstore(5, sub(add(dataoffset("RuntimeObject"), datasize("RuntimeObject")),0x20))
         return(0x0, datasize("RuntimeObject"))
+
+        function loadCallDataValueFromIndex(offset) -> val {
+            let position := add( 4, mul( offset, 0x20))
+            if lt(calldatasize(), add(position, 0x20)) {
+             revert(0, 0)
+            }
+            val := calldataload(position)
+        }
     }
 
     object "RuntimeObject" {
@@ -11,6 +24,16 @@ object "ContractObject" {
         code{
 
             switch getSelector()
+
+            // add test method additionally to test constructor arguments
+            case 0xf8a8fd6d /*test()*/ {
+            mstore(0x0, sload(5))
+            return(0x0, 0x20)
+            }
+
+            case 0x0e89341c /*uri(uint256)*/ {
+
+            }
 
 
 
@@ -221,6 +244,9 @@ object "ContractObject" {
             }
             function nonceOperatorApprovals() -> nonce {
                 nonce := 2
+            }
+            function nonceUri() -> nonce {
+                nonce := 3
             }
 
 
@@ -563,6 +589,16 @@ object "ContractObject" {
                 revertIfZero(tokenId)
                 let hash := getHashValue(addr, tokenId, 1)
                 val := sload(hash)
+            }
+
+            function uri(id) -> value {
+                let hash := getHashValue(id, 0, nonceForBalanceOf())
+                let val := sload(hash)
+            }
+
+            function setUri( id, value) {
+                let hash := getHashValue(id, 0, nonceForBalanceOf())
+                let val := sload(hash)
             }
 
             function mint(sender, tokenId, amount ) -> bool {
