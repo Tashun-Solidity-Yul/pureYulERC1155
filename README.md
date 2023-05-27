@@ -1,6 +1,27 @@
+# Pure Yul ERC1155 Contract
+
+This is a pure yul erc1155 contract written using a hardhat compiler and external fixed solidity version to compile yul into byte code
+
+as mentioned in `compileASingleFileToBinaryCode` method need to add the bat to the mentioned path
+`C:\addToPath\yul_pure_compile.bat`
 
 
-
+``` 
+# yul_pure_compile.bat
+@REM @echo off
+@REM - compiling file name or (absolute or relative) path to the compiling file
+set yulFile=%1
+@REM - filename or the reference name that should be saved with
+set fileName=%2
+@REM - path to save location without the save file name
+set filePath=%3
+IF "%~3"=="" EXIT /B
+@Rem extension without the . => example yaml(instead of .yaml)
+set extension=%4
+call del /S /Q %filePath%\*
+call md %filePath%
+call solc --strict-assembly   %yulFile% --optimize  >>  %filePath%\%fileName%.%extension%
+```
 Removed the Free Memory pointer concept, tried reusing memory
 
 `startMemoryCopyDynamicArray1 - 0xc0 memory location `
